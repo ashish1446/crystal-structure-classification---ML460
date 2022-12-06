@@ -1,0 +1,950 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="utf-8">
+<title>index</title>
+
+ <link href="http://www.niser.ac.in/~smishra/css/smlab.css"
+       rel="stylesheet" 
+       type="text/css" />
+ <meta name="viewport" content="width=device-width, initialscale=1">
+<body>
+<div class="container">
+
+<head> <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+</head>
+
+<h1>Finding crystal structure pattern using Machine Learning</h1>
+
+
+<div class="content">
+  <p style="text-align:left;">
+    <a href="https://github.com/ashish1446/ML_460">GitHub</a> 
+    <span style="float:right;">
+      
+    </span>
+  </p>
+
+<p>
+<h2>Motivation</h2>
+</p>
+
+<p>Identifying different crystals and complex structures such as  to quasicrystals.</p>
+
+<h2>Plan</h2>
+<p>To start off we will simulate data, then we would try to classify periodic crystals and quasicrystals using simulated data.</p>
+
+<h2>Algorithm and Datasets</h2>
+<p>In this project we use both supervised and unsupervised learning methods. We use Gaussian mixture models (GMMs) as implemented in scikit-learn to perform unsupervised learning. For supervised learning model, we can use our local environment descriptors to create order parameters based on our knowledge of which structures are present in the systems we study. We take exemplary simulation data for the five periodic crystal structures, the low- and medium-density icosahedral quasicrystals, the high-density periodic quasicrystal approximant structure, and four points in the disordered region of the phase diagram from manual analysis 11 and train a simple feedforward artificial neural network (ANN) with one hidden layer to predict the structure (i.e., from which exemplar sample each particle was taken) from the neighbor- averaged spherical harmonics of each particle.
+Data can be simulated using an oscillating pair potential(1).</p>
+
+<h2>Timeline</h2>
+<p>Week 04: Project Proposal Presentation</p>
+<p>Week 05: Literature survey</p>
+<p>Week 06: Simulating data</p>
+<p>Week 07: Simulating data</p>
+
+
+
+ 
+
+<h2>Reference</h2>
+<p> 1) Matthew Spellings and Sharon C. Glotzer. Machine Learning for Crystal Identification and Discovery. SOFT MATTER: SYNTHESIS, PROCESSING AND PRODUCTS, 2018 Vol. 00, No. 00.Carolyn L. Phillips,Gregory A. Voth. Discovering crystals using shape matching and machine learning. Soft Matter, 2013, 9, 8552–8568.</p>
+<p>2) Carolyn L. Phillips,Gregory A. Voth. Discovering crystals using shape matching and machine learning. Soft Matter, 2013, 9, 8552–8568.</p>
+
+<p>
+<h1>Milestone</h1>
+</p>
+
+<p>
+Crystals have component atoms that are arranged in ordered fashion. Quasicrystals are crystals which are ordered but not periodic. In this project we try to classify crystal and quasicrystal structures using Machine Learning. Once we classify crystals, next, we would try to clasify quasicrystals into various sub-classes (pentagonal, octagonal, decagonal, dodecagonal etc.) according to it's local symmetry.
+
+</p>
+
+<h2>Data simulation</h2>
+<p>Here we use two dimensonal LJG(Lennard-Jones-Gauss) system. The 2D LJG system consists of particles confined to move in a plane that interact via a double-well pair potential function:
+
+$${{V(r)=\frac{1}{r^{12}}-\frac{2}{r^{6}}-\varepsilon \exp \left(-\frac{\left(r-r_{0}\right)^{2}}{2 \sigma^{2}}\right)}}$$
+
+Three free parameters \(\epsilon\), \(r_0\) and \(\sigma\) determine the depth, radial position, and width of the second well, respectively. By changing these paramteters we could obtain different crystals. The table below shows different crystal structures corresponding to particular \(\epsilon\) and \(r_0\) values. Here we consider \(\sigma^2=\)0.02
+
+</p>
+
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>\(\epsilon\)</th>
+    <th>\(r_0\)</th>
+    <th>Crystal Structure</th>
+  </tr>
+  <tr>
+    <td>1.1</td>
+    <td>1.4</td>
+    <td>square</td>
+  </tr>
+  <tr>
+    <td>3.1</td>
+    <td>1.55</td>
+    <td>honeycomb</td>
+  </tr>
+  <tr>
+    <td>1.1</td>
+    <td>1.5</td>
+    <td>pentagon</td>
+  </tr>
+  <tr>
+    <td>1.1</td>
+    <td>1.6</td>
+    <td>hexagon</td>
+  </tr>
+  <tr>
+    <td>2.3</td>
+    <td>1.5</td>
+    <td>quasicrystal</td>
+  
+  </tr>
+</table>
+<caption>(Phillips,Voth; Soft Matter, 2013, 9, 8552)</caption>
+
+
+
+
+<p><h2>LAMMPS</h2></p>
+
+<p>We use LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator from Sandia National Laboratories) for simulating crystal structures. 
+</p>
+<p>LAMMPS is a molecular dynamic simulation software. The input file for the LAMMPs contains informations like initial coordinates of the atoms, boundary conditions, potentials, number of atoms, measuring unit, thermodynamic parameters etc. The simulation will generate a list of output files containing the outcomes of the simulation.  </p>
+
+<h3>Details of our simulation</h3>
+
+<ul>
+  <li>number of particles = 1024</li>
+  <li>number of simulations = 5000</li>
+  <li>\(r_0\in\) [1.11, 2.10], \(\Delta r_0=\) 0.01 </li>
+  <li>\(\epsilon\in\) [0.1, 5], \(\Delta \epsilon=\) 0.1 </li>
+  <li>LJG potential cut-off at \(r=\) 2.5</li>
+  <li>\(\sigma^2=\) 0.02</li>
+  <li>\(\Delta t=\) 0.01</li>
+  <li> Thermodynamic ensemble : NVT ensemble </li>
+  <li>Pressure P = 0</li>
+
+</ul>  
+<p>In each run we start the simulation in a random configuration. The temperature of the system is increased, until either the liquid phase or gas phase is reached. Then the temperature is lowerered linearly over \(2\times10^6\) MD steps.This is enough to reach a well-ordered crystal.</p>
+
+<h3>Why we couldn't achieve the milestone target</h3>
+<p>In first two weeks we read papers and understood the methods and figured out the parameteres. Initially we tried to do the simulation using Python, it was time consuming and did'nt get expected results. So we looked for good molecular dymanic softwares for doing our work. Then we contacted Dr. Suman Chakraborty from S.N.Bose institute, Kolkata. He advised us to use LAMMPS, after that, we are learning the LAMMPs software and doing simulations for simpler systems.</p>
+
+
+<h3>Timeline</h3>
+<p>Week 08: Simulating data</p>
+<p>Week 09: Data cleaning</p>
+<p>Week 10: Implementating ML algorithm</p>
+<p>Week 11: Implementing ML algorithm</p>
+
+
+
+<p> <h2>Simulation</h2> </p>
+<p> Using lammps software we simulated five different types (200 each) of five crystal strcutures (fcc, bcc, hcp, square and diamond), by varying the scale factor of lattices. 
+After generating thousand crystal structures (coordinates), our next step was to convert it into feature vectors. 
+   
+
+
+<p><h2>Feature vectors</h2></p>
+<p>Given a central atom, we can project its near neighbor bonds to a unit sphere. Based on these projected vectors one can define a set of local bond order parameters, also known as Steinhardt order parameters, which are rotationally invariant combinations of spherical harmonics.The bond order parameters exhibit characteristic values for each crystal structure, allowing us to discriminate between them.
+</p>
+<p>
+
+Given the \(N\) neighbor vectors \(r_{1} \ldots r_{N}\) of a central atom, the \(l\)th order parameter is defined according to Steinhardt as
+$$
+Q_{l}=\sqrt{\frac{4 \pi}{2 l+1} \sum_{m=-l}^{+l}\left|q_{l m}\right|^{2}}
+$$
+with
+$$
+q_{l m}=\frac{1}{N} \sum_{i=1}^{N} Y_{l}^{m}\left(r_{i}\right)
+$$
+Here, the complex functions \(Y_{l}^{m}(r)=Y_{l}^{m}(\theta, \varphi)\) are the spherical harmonics, whose evaluation is computationally expensive. The set of local bond order parameters, \(\left\{Q_{l}\right\}\) with \(l=1,2,3, \ldots,\) is invariant under rotations of the coordinate system (meaning that it is independent of the crystal's orientation). Bond order parameters up to \(l=3\) are zero for lattices with cubic symmetry, and one usually takes into account the values of \(Q_{4}\) and \(Q_{6}\) to discriminate between different types of crystals. 
+</p>
+
+<p> We used the coordinate data of crystals and Ovito's Structure Analysis Tool(5) to calculate the Steinhardt order parameters (bop). The tool generates a neighbor list first for each atom. For this we have to specify a cutoff radius using the --cutoff command line option, upon whch the tool will calculate the Q4 and Q6 values. An example of command line we used for BCC:<p>
+      <center style="color:blue">StructureAnalysisTool --cutoff 200 dump_BCC.atom bop</center>
+
+
+</p>
+
+
+<p> <h2>Results and Discussion</h2> </p>
+<p>We plotted the Q4 and Q6 with different crystal combinations, after that, we selected crystal classses which are least overlapping in the plot.</p>
+
+<h3>1) Binary classification of HCP and Diamond</h3>
+<br>
+
+<figure>
+                        <img src="hcp_dmd.png" alt="Input" style="width: 500px;">
+                        <figcaption> Q4 vs Q6 plot of HCP and Diamond (DMD).
+                               
+                        </figcaption>
+                    </figure>
+
+<br>
+
+
+We used 3 ML models to classify HCP and Diamond.
+
+<p><h3>a)SVM</h3></p>
+
+<br>
+
+<figure>
+                        <img src="cnf_mtrx_dmd_hcp_svm.png" alt="Input" style="width: 400px;">
+                        <figcaption> Confusion matrix for our model
+                               
+                        </figcaption>
+                    </figure>
+
+<br>
+<p>We used a training dataset of size 0.75 and random state = 109.</p>
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>Accuracy</th>
+    <th>Train score</th>
+    <th>Test score</th>
+  </tr>
+  <tr>
+    <td>0.917</td>
+    <td>0.813</td>
+    <td>0.917</td>
+  </tr>
+ 
+</table>
+
+<p><h3>b)Logistic regression</h3></p>
+
+<br>
+
+<figure>
+                        <img src="cnf_mtrx_dmd_hcp_logreg.png" alt="Input" style="width: 400px;">
+                        <figcaption> Confusion matrix for our model
+                               
+                        </figcaption>
+                    </figure>
+
+<br>
+<p>We used a training dataset of size 0.80 and random state = 200.</p>
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>Accuracy</th>
+    <th>Train score</th>
+    <th>Test score</th>
+  </tr>
+  <tr>
+    <td>0.80</td>
+    <td>0.802</td>
+    <td>0.556</td>
+  </tr>
+ 
+</table>
+<p><h3>c)ANN</h3></p>
+<br>
+
+<figure>
+                        <img src="hcp_dmd_ann.png" alt="Input" style="width: 600px;">
+                        <figcaption> ANN containing 2 layers of 15 and 8 hidden variables with activation function 'relu'.
+                               
+                        </figcaption>
+                    </figure>
+
+<br>
+<p>We used a training dataset of size 0.8 and random state = 42.</p>
+
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>Loss</th>
+    <th>Accuracy</th>
+    <th>Val_loss</th>
+    <th>Val_Accuracy</th>
+  </tr>
+  <tr>
+    <td>0.3690</td>
+    <td>0.8338</td>
+    <td>nan</td>
+    <td>0.8750</td>
+  </tr>
+
+
+ 
+</table>
+<br>
+ <head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: blue;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>5-fold cross validation </th>
+    <th></th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>86.36</td>
+  </tr>
+<tr>
+    <td>2</td>
+    <td>86.21</td>
+  </tr>
+<tr>
+    <td>3</td>
+    <td>78.16</td>
+  </tr>
+<tr>
+    <td>4</td>
+    <td>43.68</td>
+  </tr>
+<tr>
+    <td>5</td>
+    <td>80.64</td>
+  </tr>
+<tr>
+    <td>Average</td>
+    <td>74.97</td>
+  </tr>
+<tr>
+    <td>Error</td>
+    <td>+/- 15.97</td>
+  </tr>
+ 
+</table>
+</br>
+
+
+
+
+
+
+<h3>2) Binary classification of BCC and FCC</h3>
+
+<br>
+
+<figure>
+                        <img src="bcc_fcc.png" alt="Input" style="width: 600px;">
+                        <figcaption> Q4 vs Q6 plot of BCC and FCC.
+                        </figcaption>
+                    </figure>
+
+<br>
+<p> Like in case of FCP and Diamond, we used 3 models to classify BCC and FCC.</p>
+<p><h3>a)SVM</h3></p>
+<br>
+
+<figure>
+                        <img src="bcc_fcc_svm.png" alt="Input" style="width: 400px;">
+                        <figcaption> Confusion matrix for our model.
+                        </figcaption>
+                    </figure>
+
+<br>
+
+
+
+<br>
+<p>We used a training dataset of size 0.75 and random state = 109.</p>
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>Accuracy</th>
+    <th>Train score</th>
+    <th>Test score</th>
+  </tr>
+  <tr>
+    <td>0.72</td>
+    <td>0.6903</td>
+    <td>0.7307</td>
+  </tr>
+ 
+</table>
+
+
+<p><h3>b)Logistic regression</h3></p>
+
+
+<br>
+<p>We used a training dataset of size 0.70 and random state = 200.</p>
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>Accuracy</th>
+    <th>Train score</th>
+    <th>Test score</th>
+  </tr>
+  <tr>
+    <td>0.55</td>
+    <td>0.519</td>
+    <td>0.528</td>
+  </tr>
+ 
+</table>
+<p><h3>c)ANN</h3></p>
+
+<p> Model accuarcy: 0.5301 </p>
+
+
+<br>
+
+<figure>
+                        <img src="fcc_bcc_ann.png" alt="Input" style="width: 500px;">
+                        <figcaption>ANN containing 2 layers of 5 and 3 hidden variables with activation function 'relu'.
+                        </figcaption>
+                    </figure>
+
+<br>
+
+
+
+<h3>3) Multi-class classification (SVM) of FCC, HCP and Diamond</h3>
+
+
+
+
+
+<br>
+
+
+<figure>
+                        <img src="fcc-hcp-dmd.png" alt="Input" style="width: 500px;">
+                        <figcaption> Q4 and Q6 scatter plot.
+                        </figcaption>
+                    </figure>
+
+<br>
+<br>
+
+<figure>
+                        <img src="hcp_dmd_fcc_svm_sig.png" alt="Input" style="width: 400px;">
+                        <figcaption>Using sigmoid kernel gave the maximum accuracy(0.80) for the model.
+                        </figcaption>
+                    </figure>
+
+<br>
+
+
+
+
+<br>
+
+<figure>
+                        <img src="conf_marix_fcc_hcp_dmd.png" alt="Input" style="width: 400px;">
+                        <figcaption>Confusion matrix for our model.
+                        </figcaption>
+                    </figure>
+
+<br>
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th></th>
+    <th>RBF</th>
+    <th>Sigmoid</th>
+    <th>Poly</th>
+    <th>Linear</th>
+  </tr>
+  <tr>
+    <td>Accuracy</td>
+    <td>0.53(gamma=0.1,C=50)</td>
+    <td>0.80(C=50)</td>
+    <td>0.543(C=150,degree=3)</td>
+    <td>0.472(C=300)</td>
+  </tr>
+ 
+</table>
+<br>
+Variation of accuracy with C in Sigmoid kernal
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>C</th>
+    <th>Accuracy</th>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>0.778</td>
+  </tr>
+  <tr>
+    <td>30</td>
+    <td>0.785</td>
+  </tr>
+ <tr>
+    <td>50</td>
+    <td>0.80</td>
+  </tr>
+ <tr>
+    <td>70</td>
+    <td>0.80</td>
+  </tr>
+ <tr>
+    <td>100</td>
+    <td>0.807</td>
+  </tr>
+ 
+</table>
+<br>
+<h3>4) Multi-class classification (SVM) of BCC, HCP and SC</h3>
+
+
+
+<br>
+
+
+<figure>
+                        <img src="q4q6sc.jpeg" alt="Input" style="width: 500px;">
+                        <figcaption> Q4 and Q6 scatter plot.
+                        </figcaption>
+                    </figure>
+
+<br>
+
+
+
+
+<br>
+
+
+<figure>
+                        <img src="sc_hcp_bcc_svm_lin.png" alt="Input" style="width: 400px;">
+                        <figcaption>Using linear kernel gave the maximum accuracy(0.80) for the model.
+                        </figcaption>
+                    </figure>
+
+<br>
+
+
+
+
+
+<br>
+
+
+<figure>
+                        <img src="conf_matrix_hcp_sc_bcc.png" alt="Input" style="width: 400px;">
+                        <figcaption>Confusion matrix for our model.
+                        </figcaption>
+                    </figure>
+
+<br>
+
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th></th>
+    <th>RBF</th>
+    <th>Sigmoid</th>
+    <th>Poly</th>
+    <th>Linear</th>
+  </tr>
+  <tr>
+    <td>Accuracy</td>
+    <td>0.742(gamma=25,C=100)</td>
+    <td>0.716(C=60)</td>
+    <td>0.675(C=100,degree=3)</td>
+    <td>0.80(C=50)</td>
+  </tr>
+ 
+</table>
+ 
+<br>
+Variation of accuracy with gamma in RBF kernel.
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #808080;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>gamma</th>
+    <th>Accuracy</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>0.558</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>0.675</td>
+  </tr>
+ <tr>
+    <td>10</td>
+    <td>0.74</td>
+  </tr>
+ <tr>
+    <td>25</td>
+    <td>0.742</td>
+  </tr>
+ <tr>
+    <td>50</td>
+    <td>0.73</td>
+  </tr>
+ 
+</table>
+
+<br>
+
+<h3>Conclusion</h3>
+<p>Our model for classifying HCP and Diamond gave good result. The data had less overlap, and the three different models: SVM, Logistic regression and ANN showed substantial classification accuracy. The FCC and BCC classification models didn't work well because of the huge overlap in bop data. Classifying multiple crystal classes, using SVM with different kernel functions gave satisfying results for particular kernels, as shown in the respecive tables.
+<h2>Reference</h2>
+<p> 1) Matthew Spellings and Sharon C. Glotzer. Machine Learning for Crystal Identification and Discovery. SOFT MATTER: SYNTHESIS, PROCESSING AND PRODUCTS, 2018 Vol. 00, No. 00.</p>
+<p>2) Carolyn L. Phillips,Gregory A. Voth. Discovering crystals using shape matching and machine learning. Soft Matter, 2013, 9, 8552–8568.</p>
+<p>3)Michael Engel,Hans-Rainer.Self-Assembly of Monatomic Complex Crystals and Quasicrystals with a Double-Well Interaction Potential, PRL 98, 225505 (2007)</p>
+<p>4)Michael Engel. Dynamics and Defects of Complex Crystals and Quasicrystals: Perspectives from Simple Model Systems</p>
+<p>5Structure identification methods for atomistic simulations of crystalline materials
+Alexander Stukowski 28 May 2012
+</p>
+
+
+
+
+
+<h3>Acknowledgement</h3>
+<p> We sincerely thank Dr. Subhankar Mishra for his valuable guidance throughtout the course and also for floating Machine Learning course in NISER for the first time. He was kind enough to give access to his cluster, in which we did many of our data simualtions. We thank Dr. Kush Saha for his guidance and granting us access to the cluster. We are grateful to Mr. Sujith N.S. for his help with simulations. </p>
+
+<br>
+
+<p align ="center"><iframe src="https://docs.google.com/presentation/d/e/2PACX-1vQWq4oOig9ZHI7kPD07uZ02IIRI9HyEPwLefWNML5SJmlV6nh_aBnnIi2F41lCQwJI_0ApE2BshjNZX/embed?start=false&loop=false&delayms=3000" frameborder="0" width="960" height="569" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></p>
+</div>
+</div>
+
+<script>
+window.onscroll = function() {myFunction()};
+
+var header = document.getElementById("myHeader");
+var sticky = header.offsetTop;
+
+function myFunction() {
+  if (window.pageYOffset > sticky) {
+    header.classList.add("sticky");
+  } else {
+    header.classList.remove("sticky");
+  }
+}
+</script>
+<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<body>
+<html>
